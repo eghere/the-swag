@@ -9,7 +9,12 @@ enum custom_keycodes {
   RGB_SLD = ZSA_SAFE_RANGE,
 };
 
-
+// Animation variables
+static uint8_t prev_layer = 0;
+static bool gradient_anim_active = false;
+static uint16_t gradient_anim_start = 0;
+static uint8_t gradient_from[RGB_MATRIX_LED_COUNT][3];
+static uint8_t gradient_to[RGB_MATRIX_LED_COUNT][3];
 
 enum tap_dance_codes {
   DANCE_0,
@@ -122,6 +127,23 @@ const uint8_t PROGMEM ledmap[][RGB_MATRIX_LED_COUNT][3] = {
 
 };
 
+extern rgb_config_t rgb_matrix_config;
+
+RGB hsv_to_rgb_with_value(HSV hsv) {
+  RGB rgb = hsv_to_rgb( hsv );
+  float f = (float)rgb_matrix_config.hsv.v / UINT8_MAX;
+  return (RGB){ f * rgb.r, f * rgb.g, f * rgb.b };
+}
+
+void interpolate_color(uint8_t from[3], uint8_t to[3], float t, uint8_t out[3]) {
+  for (int i = 0; i < 3; i++) {
+    out[i] = from[i] + (to[i] - from[i]) * t;
+  }
+}
+
+void keyboard_post_init_user(void) {
+  rgb_matrix_enable();
+}
 void set_layer_color(int layer) {
   for (int i = 0; i < RGB_MATRIX_LED_COUNT; i++) {
     HSV hsv = {
@@ -142,30 +164,52 @@ bool rgb_matrix_indicators_user(void) {
   if (rawhid_state.rgb_control) {
       return false;
   }
-  if (!keyboard_config.disable_layer_led) { 
-    switch (biton32(layer_state)) {
-      case 0:
-        set_layer_color(0);
-        break;
-      case 1:
-        set_layer_color(1);
-        break;
-      case 2:
-        set_layer_color(2);
-        break;
-      case 3:
-        set_layer_color(3);
-        break;
-      case 4:
-        set_layer_color(4);
-        break;
-      case 5:
-        set_layer_color(5);
-        break;
-     default:
-        if (rgb_matrix_get_flags() == LED_FLAG_NONE) {
-          rgb_matrix_set_color_all(0, 0, 0);
+  uint8_t curr_layer = biton32(layer_state);
+
+  if (!keyboard_config.disable_layer_led) {
+    if (curr_layer != prev_layer) {
+      for (int i = 0; i < RGB_MATRIX_LED_COUNT; i++) {
+        gradient_from[i][0] = pgm_read_byte(&ledmap[prev_layer][i][0]);
+        gradient_from[i][1] = pgm_read_byte(&ledmap[prev_layer][i][1]);
+        gradient_from[i][2] = pgm_read_byte(&ledmap[prev_layer][i][2]);
+
+        gradient_to[i][0] = pgm_read_byte(&ledmap[curr_layer][i][0]);
+        gradient_to[i][1] = pgm_read_byte(&ledmap[curr_layer][i][1]);
+        gradient_to[i][2] = pgm_read_byte(&ledmap[curr_layer][i][2]);
+      }
+      gradient_anim_active = true;
+      gradient_anim_start  = timer_read();
+      prev_layer = curr_layer;
+    }
+
+    if (gradient_anim_active) {
+      uint16_t elapsed = timer_elapsed(gradient_anim_start);
+      float t = (elapsed >= 250) ? 1.0f : (elapsed / 250.0f);
+
+      if (t >= 1.0f) {
+        gradient_anim_active = false;
+        set_layer_color(curr_layer);
+      } else {
+        for (int i = 0; i < RGB_MATRIX_LED_COUNT; i++) {
+          uint8_t interp_hsv[3];
+          interpolate_color(gradient_from[i], gradient_to[i], t, interp_hsv);
+          if (!gradient_to[i][0] && !gradient_to[i][1] && !gradient_to[i][2]) {
+            if (t > 0.98f) {
+              rgb_matrix_set_color(i, 0, 0, 0);
+              continue;
+            }
+          }
+          if (!interp_hsv[0] && !interp_hsv[1] && !interp_hsv[2]) {
+            rgb_matrix_set_color(i, 0, 0, 0);
+          } else {
+            HSV hsv = { .h = interp_hsv[0], .s = interp_hsv[1], .v = interp_hsv[2] };
+            RGB rgb = hsv_to_rgb_with_value(hsv);
+            rgb_matrix_set_color(i, rgb.r, rgb.g, rgb.b);
+          }
         }
+      }
+    } else {
+      set_layer_color(curr_layer);
     }
   } else {
     if (rgb_matrix_get_flags() == LED_FLAG_NONE) {
