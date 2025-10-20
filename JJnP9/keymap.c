@@ -126,8 +126,21 @@ const uint8_t PROGMEM ledmap[][RGB_MATRIX_LED_COUNT][3] = {
 extern rgb_config_t rgb_matrix_config;
 
 void interpolate_color(uint8_t from[3], uint8_t to[3], float t, uint8_t out[3]) {
-  for (int i = 0; i < 3; i++) {
-    out[i] = from[i] + (to[i] - from[i]) * t;
+  // Hue (index 0): interpolate along shortest wrap-around path
+  int16_t h_from = from[0];
+  int16_t h_to   = to[0];
+  int16_t dh = h_to - h_from;
+  if (dh > 127)      dh -= 256;
+  else if (dh < -127) dh += 256;
+  int16_t h_interp = h_from + (int16_t)(dh * t);
+  if (h_interp < 0)      h_interp += 256;
+  else if (h_interp > 255) h_interp -= 256;
+  out[0] = (uint8_t)h_interp;
+
+  // Saturation & Value (indexes 1,2): simple linear interpolation
+  for (int i = 1; i < 3; i++) {
+    int16_t df = to[i] - from[i];
+    out[i] = (uint8_t)(from[i] + (int16_t)(df * t));
   }
 }
 
