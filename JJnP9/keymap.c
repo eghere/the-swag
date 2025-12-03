@@ -9,6 +9,7 @@
 enum custom_keycodes {
   RGB_SLD = ZSA_SAFE_RANGE,
   ANIM_NEXT,
+  MACRO_DELAY,
 };
 
 
@@ -51,7 +52,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_NO,                                          KC_NO,          KC_NO,          KC_CALCULATOR,  KC_SLASH,       KC_ASTR,        KC_BSPC,        KC_NO,          
     KC_NO,          KC_NO,          DM_RSTP,        DM_REC2,        DM_REC1,        KC_NO,          KC_NO,                                          KC_NO,          KC_NO,          KC_7,           KC_8,           KC_9,           KC_PLUS,        KC_NO,          
     KC_NO,          KC_LEFT_GUI,    KC_LEFT_ALT,    KC_LEFT_CTRL,   KC_LEFT_SHIFT,  KC_NO,          KC_NO,                                                                          KC_NO,          KC_NO,          KC_4,           KC_5,           KC_6,           KC_MINUS,       KC_NO,          
-    KC_NO,          KC_NO,          KC_NO,          DM_PLY2,        DM_PLY1,        KC_NO,                                          KC_NO,          KC_1,           KC_2,           KC_3,           KC_UNDS,        KC_NO,          
+    KC_NO,          MACRO_DELAY,          KC_NO,          DM_PLY2,        DM_PLY1,        KC_NO,                                          KC_NO,          KC_1,           KC_2,           KC_3,           KC_UNDS,        KC_NO,          
     KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_TRANSPARENT, KC_NO,                                                                                                          KC_NO,          KC_0,           KC_NO,          KC_DOT,         KC_SPACE,       KC_NO,          
     KC_TRANSPARENT, KC_TRANSPARENT, KC_NO,                          KC_NO,          KC_TRANSPARENT, KC_TRANSPARENT
   ),
@@ -418,6 +419,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           set_layer_color(biton32(layer_state));
         }
         return false;
+    case MACRO_DELAY:
+        if (record->event.pressed) {
+            wait_ms(10);
+        }
+        return false;
+
 
   }
   return true;
