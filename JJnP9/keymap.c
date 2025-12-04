@@ -420,8 +420,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         }
         return false;
     case MACRO_DELAY:
-        if (record->event.pressed) {
-            wait_ms(10);
+        if (!record->event.pressed) {
+            wait_ms(100);
         }
         return false;
 
