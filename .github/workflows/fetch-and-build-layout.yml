@@ -12,7 +12,8 @@ on:
         type: choice
         options:
           - voyager
-          - moonlander
+          - moonlander/reva
+          - moonlander/revb
           - ergodox_ez
           - ergodox_ez/m32u4/glow
           - ergodox_ez/m32u4/shine
@@ -21,7 +22,7 @@ on:
           - ergodox_ez/stm32/shine
           - planck_ez
           - planck_ez/glow
-        default: moonlander
+        default: moonlander/reva
 
 permissions:
   contents: write
@@ -74,13 +75,7 @@ jobs:
         run: |
           git fetch origin main
           git checkout -B main origin/main
-          git merge -Xignore-all-space oryx || {
-            echo "Merge failed; showing conflict details"
-            git status
-            git diff
-            git diff --name-only --diff-filter=U
-            exit 1
-          }
+          git merge -Xignore-all-space oryx
           git push
 
       - name: Update QMK firmware submodule to latest version (${{ steps.download-layout-source.outputs.firmware_version }})
@@ -114,16 +109,8 @@ jobs:
           mkdir -p ${keyboard_directory}/${{ github.event.inputs.layout_geometry }}/keymaps && cp -r ${{ github.event.inputs.layout_id }} "$_"
           
           # Build the layout
-          docker run -v ./qmk_firmware:/root --rm qmk /bin/sh -lc "
-            set -eux
-            git rev-parse --is-inside-work-tree || true
-            ls -la keyboards/zsa/${{ github.event.inputs.layout_geometry }} || true
-            ls -la keyboards/zsa/${{ github.event.inputs.layout_geometry }}/keyboard.json || true
-            ls -la keyboards/zsa/${{ github.event.inputs.layout_geometry }}/info.json || true
-            pwd
-            tree .
+          docker run -v ./qmk_firmware:/root --rm qmk /bin/sh -c "
             qmk setup zsa/qmk_firmware -b firmware${{ steps.download-layout-source.outputs.firmware_version }} -y
-            qmk config
             make ${make_prefix}${{ github.event.inputs.layout_geometry }}:${{ github.event.inputs.layout_id }}
           "
           
