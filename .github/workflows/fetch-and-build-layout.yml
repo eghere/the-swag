@@ -121,7 +121,7 @@ jobs:
             ls -la keyboards/zsa/${{ github.event.inputs.layout_geometry }}/keyboard.json || true
             ls -la keyboards/zsa/${{ github.event.inputs.layout_geometry }}/info.json || true
             pwd
-            ls -la zsa/qmk_firmware
+            tree .
             qmk setup zsa/qmk_firmware -b firmware${{ steps.download-layout-source.outputs.firmware_version }} -y
             qmk config
             make ${make_prefix}${{ github.event.inputs.layout_geometry }}:${{ github.event.inputs.layout_id }}
