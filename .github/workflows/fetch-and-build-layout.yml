@@ -114,7 +114,10 @@ jobs:
           mkdir -p ${keyboard_directory}/${{ github.event.inputs.layout_geometry }}/keymaps && cp -r ${{ github.event.inputs.layout_id }} "$_"
           
           # Build the layout
-          docker run -v ./qmk_firmware:/root --rm qmk /bin/sh -c "
+          docker run -v ./qmk_firmware:/root --rm qmk /bin/sh -lc "
+            set -eux
+            get rev-parse --is-inside-work-tree || true
+            ls -la keyboards/zsa${{ github.event.inputs.layout_geometry }} || true
             qmk setup zsa/qmk_firmware -b firmware${{ steps.download-layout-source.outputs.firmware_version }} -y
             make ${make_prefix}${{ github.event.inputs.layout_geometry }}:${{ github.event.inputs.layout_id }}
           "
