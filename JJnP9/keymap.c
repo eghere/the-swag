@@ -127,7 +127,7 @@ const uint8_t PROGMEM ledmap[][RGB_MATRIX_LED_COUNT][3] = {
 typedef enum {
     CASE_MODE_NONE = 0,
     CASE_MODE_SNAKE,
-    CASE_MODE_HTTP_HEADER,
+    CASE_MODE_HTTP,
     // Future modes can be added here
 } case_mode_t;
 
@@ -162,13 +162,14 @@ void leader_end_user(void) {
     bool did_leader_succeed = false;
     
     // Case mode sequences
-    if (leader_sequence_one_key(KC_S)) {
+    // Home-row keys must be matched against mod-tap binding
+    if (leader_sequence_one_key(MT(MOD_LALT, KC_S))) {
         // snake_case mode
         enter_case_mode(CASE_MODE_SNAKE);
         did_leader_succeed = true;
     } else if (leader_sequence_one_key(KC_H)) {
-        // Http-Header-Case mode (to be implemented)
-        enter_case_mode(CASE_MODE_HTTP_HEADER);
+        // Http-Case mode (to be implemented)
+        enter_case_mode(CASE_MODE_HTTP);
         did_leader_succeed = true;
     }
     // Future leader sequences can be added here
@@ -400,7 +401,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case CASE_MODE_SNAKE:
               register_code16(KC_UNDERSCORE);
               break;
-            case CASE_MODE_HTTP_HEADER:
+            case CASE_MODE_HTTP:
               register_code16(KC_MINUS);
               // Future: implement capitalization logic
               break;
@@ -412,7 +413,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case CASE_MODE_SNAKE:
               unregister_code16(KC_UNDERSCORE);
               break;
-            case CASE_MODE_HTTP_HEADER:
+            case CASE_MODE_HTTP:
               unregister_code16(KC_MINUS);
               break;
             default:
