@@ -154,11 +154,15 @@ void enter_case_mode(case_mode_t mode) {
 // Leader Key Callbacks
 void leader_start_user(void) {
     leader_active = true;
+    layer_on(5);
     // Future: trigger LED animation for leader active state
 }
 
 void leader_end_user(void) {
     leader_active = false;
+
+    layer_off(5);
+
     bool did_leader_succeed = false;
     
     // Case mode sequences
@@ -374,16 +378,6 @@ tap_dance_action_t tap_dance_actions[] = {
 };
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-  // Disable homerow mods when leader is active
-  if (leader_active && IS_QK_MOD_TAP(keycode)) {
-    if (record->event.pressed) {
-      register_code16(QK_MOD_TAP_GET_TAP_KEYCODE(keycode));
-    } else {
-      unregister_code16(QK_MOD_TAP_GET_TAP_KEYCODE(keycode));
-    }
-    return false;
-  }
-  
   // Handle case mode key remapping
   if (is_case_mode_active()) {
     switch (keycode) {

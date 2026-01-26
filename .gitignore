@@ -4,3 +4,4 @@
 .env
 .gitconfig-local
 .venv/
+.github/copilot-instructions.md
