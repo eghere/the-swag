@@ -167,7 +167,7 @@ void leader_end_user(void) {
     
     // Case mode sequences
     // Home-row keys must be matched against mod-tap binding
-    if (leader_sequence_one_key(MT(MOD_LALT, KC_S))) {
+    if (leader_sequence_one_key(KC_S)) {
         // snake_case mode
         enter_case_mode(CASE_MODE_SNAKE);
         did_leader_succeed = true;
