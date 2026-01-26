@@ -10,4 +10,5 @@ CAPS_WORD_ENABLE = yes
 REPEAT_KEY_ENABLE = yes
 COMBO_ENABLE = yes
 LAYER_LOCK_ENABLE = yes
+LEADER_ENABLE = yes
 SRC += layer_anim_gradient.c

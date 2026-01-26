@@ -10,6 +10,7 @@ enum custom_keycodes {
   RGB_SLD = ZSA_SAFE_RANGE,
   ANIM_NEXT,
   MACRO_DELAY,
+  CASE_EXIT,
 };
 
 
@@ -30,7 +31,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_ESCAPE,      MT(MOD_LGUI, KC_A),MT(MOD_LALT, KC_S),MT(MOD_LCTL, KC_D),MT(MOD_LSFT, KC_F),KC_G,           KC_TRANSPARENT,                                                                 KC_TRANSPARENT, KC_H,           MT(MOD_RSFT, KC_J),MT(MOD_RCTL, KC_K),MT(MOD_RALT, KC_L),MT(MOD_RGUI, KC_SCLN),KC_QUOTE,       
     KC_GRAVE,       KC_Z,           KC_X,           KC_C,           KC_V,           KC_B,                                           KC_N,           KC_M,           KC_COMMA,       KC_DOT,         KC_SLASH,       KC_BSLS,        
     KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, MO(3),          TO(5),                                                                                                          LGUI(KC_SPACE), MO(4),          KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, 
-    LT(1, KC_SPACE),KC_BSPC,        KC_DELETE,                      OSL(2),         KC_ENTER,       TD(DANCE_0)
+    LT(1, KC_SPACE),KC_BSPC,        KC_DELETE,                      QK_LEAD,         KC_ENTER,       TD(DANCE_0)
   ),
   [1] = LAYOUT_moonlander(
     KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_NO,                                          KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_NO,          
@@ -122,6 +123,67 @@ const uint8_t PROGMEM ledmap[][RGB_MATRIX_LED_COUNT][3] = {
 
 };
 
+// Case Mode System
+typedef enum {
+    CASE_MODE_NONE = 0,
+    CASE_MODE_SNAKE,
+    CASE_MODE_HTTP_HEADER,
+    // Future modes can be added here
+} case_mode_t;
+
+static case_mode_t active_case_mode = CASE_MODE_NONE;
+static bool leader_active = false;
+
+// Check if we're in any case mode
+bool is_case_mode_active(void) {
+    return active_case_mode != CASE_MODE_NONE;
+}
+
+// Exit current case mode
+void exit_case_mode(void) {
+    active_case_mode = CASE_MODE_NONE;
+    // Future: trigger LED animation for exiting case mode
+}
+
+// Enter a specific case mode
+void enter_case_mode(case_mode_t mode) {
+    active_case_mode = mode;
+    // Future: trigger LED animation for entering specific case mode
+}
+
+// Leader Key Callbacks
+void leader_start_user(void) {
+    leader_active = true;
+    // Future: trigger LED animation for leader active state
+}
+
+void leader_end_user(void) {
+    leader_active = false;
+    bool did_leader_succeed = false;
+    
+    // Case mode sequences
+    if (leader_sequence_one_key(KC_S)) {
+        // snake_case mode
+        enter_case_mode(CASE_MODE_SNAKE);
+        did_leader_succeed = true;
+    } else if (leader_sequence_one_key(KC_H)) {
+        // Http-Header-Case mode (to be implemented)
+        enter_case_mode(CASE_MODE_HTTP_HEADER);
+        did_leader_succeed = true;
+    }
+    // Future leader sequences can be added here
+    // Example:
+    // else if (leader_sequence_two_keys(KC_C, KC_S)) {
+    //     // Some other command
+    //     did_leader_succeed = true;
+    // }
+    
+    if (!did_leader_succeed) {
+        // Future: play fail animation/sound
+    }
+    // Future: trigger LED animation based on success/failure
+}
+
 void keyboard_post_init_user(void) {
   rgb_matrix_enable();
 }
@@ -163,6 +225,7 @@ static void set_layer_color(uint8_t layer) {
     }
   }
 }
+
 bool rgb_matrix_indicators_user(void) {
   if (rawhid_state.rgb_control) {
     return false;
@@ -310,6 +373,56 @@ tap_dance_action_t tap_dance_actions[] = {
 };
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+  // Disable homerow mods when leader is active
+  if (leader_active && IS_QK_MOD_TAP(keycode)) {
+    if (record->event.pressed) {
+      register_code16(QK_MOD_TAP_GET_TAP_KEYCODE(keycode));
+    } else {
+      unregister_code16(QK_MOD_TAP_GET_TAP_KEYCODE(keycode));
+    }
+    return false;
+  }
+  
+  // Handle case mode key remapping
+  if (is_case_mode_active()) {
+    switch (keycode) {
+      case KC_ESCAPE:
+      case CASE_EXIT:
+        if (record->event.pressed) {
+          exit_case_mode();
+        }
+        return false;
+        
+      case KC_SPACE:
+      case LT(1, KC_SPACE):
+        if (record->event.pressed) {
+          switch (active_case_mode) {
+            case CASE_MODE_SNAKE:
+              register_code16(KC_UNDERSCORE);
+              break;
+            case CASE_MODE_HTTP_HEADER:
+              register_code16(KC_MINUS);
+              // Future: implement capitalization logic
+              break;
+            default:
+              break;
+          }
+        } else {
+          switch (active_case_mode) {
+            case CASE_MODE_SNAKE:
+              unregister_code16(KC_UNDERSCORE);
+              break;
+            case CASE_MODE_HTTP_HEADER:
+              unregister_code16(KC_MINUS);
+              break;
+            default:
+              break;
+          }
+        }
+        return false;
+    }
+  }
+
   switch (keycode) {
   case QK_MODS ... QK_MODS_MAX: 
     // Mouse keys with modifiers work inconsistently across operating systems, this makes sure that modifiers are always
