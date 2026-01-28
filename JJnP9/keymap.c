@@ -142,12 +142,16 @@ bool is_case_mode_active(void) {
 // Exit current case mode
 void exit_case_mode(void) {
     active_case_mode = CASE_MODE_NONE;
+    space_was_pressed = false;
+    last_space_timer = 0;
     // Future: trigger LED animation for exiting case mode
 }
 
 // Enter a specific case mode
 void enter_case_mode(case_mode_t mode) {
     active_case_mode = mode;
+    space_was_pressed = false;
+    last_space_timer = 0;
     // Future: trigger LED animation for entering specific case mode
 }
 
@@ -391,11 +395,26 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       case KC_SPACE:
       case LT(1, KC_SPACE):
         if (record->event.pressed) {
+          // Check for double-tap (within 300ms)
+          if (space_was_pressed && timer_elapsed(last_space_timer) < 300) {
+            // Double-tap detected: exit case mode and send a real space
+            exit_case_mode();
+            // Delete the previous underscore/dash that was typed
+            tap_code(KC_BSPC);
+            // Send a real space
+            register_code16(KC_SPACE);
+            return false;
+          }
+          
+          // First space press: send the case-specific character
+          space_was_pressed = true;
+          last_space_timer = timer_read();
+          
           switch (active_case_mode) {
             case CASE_MODE_SNAKE:
               register_code16(KC_UNDERSCORE);
               break;
-            case CASE_MODE_HTTP:
+            case CASE_MODE_HTTP_HEADER:
               register_code16(KC_MINUS);
               // Future: implement capitalization logic
               break;
@@ -415,6 +434,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           }
         }
         return false;
+      // Reset space tracking if any other key is pressed
+      default:
+        if (record->event.pressed) {
+          space_was_pressed = false;
+        }
+        break;
     }
   }
 
