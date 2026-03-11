@@ -133,6 +133,8 @@ typedef enum {
 
 static case_mode_t active_case_mode = CASE_MODE_NONE;
 static bool leader_active = false;
+static bool space_was_pressed = false;
+static uint16_t last_space_timer = 0;
 
 // Check if we're in any case mode
 bool is_case_mode_active(void) {
@@ -413,7 +415,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case CASE_MODE_SNAKE:
               register_code16(KC_UNDERSCORE);
               break;
-            case CASE_MODE_HTTP_HEADER:
+            case CASE_MODE_HTTP:
               register_code16(KC_MINUS);
               // Future: implement capitalization logic
               break;
