@@ -465,9 +465,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case DUAL_FUNC_0:
       if (record->tap.count > 0) {
         if (record->event.pressed) {
-          register_code16(KC_EXLM);
-        } else {
-          unregister_code16(KC_EXLM);
+          tap_code16(KC_EXLM);
         }
       } else {
         if (record->event.pressed) {
@@ -480,9 +478,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case DUAL_FUNC_1:
       if (record->tap.count > 0) {
         if (record->event.pressed) {
-          register_code16(KC_ASTR);
-        } else {
-          unregister_code16(KC_ASTR);
+          tap_code16(KC_ASTR);
         }
       } else {
         if (record->event.pressed) {
@@ -495,9 +491,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case DUAL_FUNC_2:
       if (record->tap.count > 0) {
         if (record->event.pressed) {
-          register_code16(KC_LPRN);
-        } else {
-          unregister_code16(KC_LPRN);
+          tap_code16(KC_LPRN);
         }
       } else {
         if (record->event.pressed) {
@@ -510,9 +504,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case DUAL_FUNC_3:
       if (record->tap.count > 0) {
         if (record->event.pressed) {
-          register_code16(KC_RPRN);
-        } else {
-          unregister_code16(KC_RPRN);
+          tap_code16(KC_RPRN);
         }
       } else {
         if (record->event.pressed) {
@@ -525,9 +517,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case DUAL_FUNC_4:
       if (record->tap.count > 0) {
         if (record->event.pressed) {
-          register_code16(KC_COLN);
-        } else {
-          unregister_code16(KC_COLN);
+          tap_code16(KC_COLN);
         }
       } else {
         if (record->event.pressed) {
