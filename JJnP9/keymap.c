@@ -27,11 +27,11 @@ enum tap_dance_codes {
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   [0] = LAYOUT_moonlander(
     KC_PSCR,        KC_1,           KC_2,           KC_3,           KC_4,           KC_5,           KC_TRANSPARENT,                                 KC_TRANSPARENT, KC_6,           KC_7,           KC_8,           KC_9,           KC_0,           KC_TRANSPARENT, 
-    CW_TOGG,        KC_Q,           KC_W,           KC_E,           KC_R,           KC_T,           KC_TRANSPARENT,                                 KC_TRANSPARENT, KC_Y,           KC_U,           KC_I,           KC_O,           KC_P,           CW_TOGG,        
+    QK_LEAD,        KC_Q,           KC_W,           KC_E,           KC_R,           KC_T,           KC_TRANSPARENT,                                 KC_TRANSPARENT, KC_Y,           KC_U,           KC_I,           KC_O,           KC_P,           QK_LEAD,        
     KC_ESCAPE,      MT(MOD_LGUI, KC_A),MT(MOD_LALT, KC_S),MT(MOD_LCTL, KC_D),MT(MOD_LSFT, KC_F),KC_G,           KC_TRANSPARENT,                                                                 KC_TRANSPARENT, KC_H,           MT(MOD_RSFT, KC_J),MT(MOD_RCTL, KC_K),MT(MOD_RALT, KC_L),MT(MOD_RGUI, KC_SCLN),KC_QUOTE,       
     KC_GRAVE,       KC_Z,           KC_X,           KC_C,           KC_V,           KC_B,                                           KC_N,           KC_M,           KC_COMMA,       KC_DOT,         KC_SLASH,       KC_BSLS,        
     KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, TO(5),                                                                                                          LGUI(KC_SPACE), MO(4),          KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, 
-    LT(1, KC_SPACE),LT(3, KC_BSPC), KC_DELETE,                      QK_LEAD,         KC_ENTER,       TD(DANCE_0)
+    LT(1, KC_SPACE),LT(3, KC_BSPC), KC_DELETE,                      KC_TRANSPARENT,  KC_ENTER,       TD(DANCE_0)
   ),
   [1] = LAYOUT_moonlander(
     KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_NO,                                          KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_NO,          KC_NO,          
@@ -126,15 +126,20 @@ const uint8_t PROGMEM ledmap[][RGB_MATRIX_LED_COUNT][3] = {
 // Case Mode System
 typedef enum {
     CASE_MODE_NONE = 0,
-    CASE_MODE_SNAKE,
-    CASE_MODE_HTTP,
-    // Future modes can be added here
+    CASE_MODE_LOWER_SNAKE,   // lower_snake_case
+    CASE_MODE_UPPER_SNAKE,   // UPPER_SNAKE_CASE
+    CASE_MODE_LOWER_CAMEL,   // lowerCamelCase
+    CASE_MODE_CAPITALIZE,    // Capitalize Each Word
+    CASE_MODE_LOWER_KEBAB,   // kebab-case
+    CASE_MODE_UPPER_KEBAB,   // UPPER-KEBAB-CASE
+    CASE_MODE_HTTP_HEADER,   // Http-Header-Case
 } case_mode_t;
 
 static case_mode_t active_case_mode = CASE_MODE_NONE;
 static bool leader_active = false;
 static bool space_was_pressed = false;
 static uint16_t last_space_timer = 0;
+static bool capitalize_next = false;
 
 // Check if we're in any case mode
 bool is_case_mode_active(void) {
@@ -146,6 +151,7 @@ void exit_case_mode(void) {
     active_case_mode = CASE_MODE_NONE;
     space_was_pressed = false;
     last_space_timer = 0;
+    capitalize_next = false;
     // Future: trigger LED animation for exiting case mode
 }
 
@@ -154,6 +160,8 @@ void enter_case_mode(case_mode_t mode) {
     active_case_mode = mode;
     space_was_pressed = false;
     last_space_timer = 0;
+    // Capitalize the first letter for modes that start each word with a capital
+    capitalize_next = (mode == CASE_MODE_CAPITALIZE || mode == CASE_MODE_HTTP_HEADER);
     // Future: trigger LED animation for entering specific case mode
 }
 
@@ -170,25 +178,38 @@ void leader_end_user(void) {
     layer_off(5);
 
     bool did_leader_succeed = false;
-    
-    // Case mode sequences
-    // Home-row keys must be matched against mod-tap binding
-    if (leader_sequence_one_key(KC_S)) {
-        // snake_case mode
-        enter_case_mode(CASE_MODE_SNAKE);
+
+    // Each binding is mirrored on both hands for ergonomic symmetry.
+    // Home-row keys are matched against their base keycode (not the mod-tap binding).
+    if (leader_sequence_one_key(KC_F) || leader_sequence_one_key(KC_J)) {
+        caps_word_toggle();
         did_leader_succeed = true;
-    } else if (leader_sequence_one_key(KC_H)) {
-        // Http-Case mode (to be implemented)
-        enter_case_mode(CASE_MODE_HTTP);
+    } else if (leader_sequence_one_key(KC_V) || leader_sequence_one_key(KC_M)) {
+        enter_case_mode(CASE_MODE_LOWER_CAMEL);
+        did_leader_succeed = true;
+    } else if (leader_sequence_one_key(KC_R) || leader_sequence_one_key(KC_U)) {
+        enter_case_mode(CASE_MODE_CAPITALIZE);
+        did_leader_succeed = true;
+    } else if (leader_sequence_one_key(KC_D) || leader_sequence_one_key(KC_K)) {
+        enter_case_mode(CASE_MODE_UPPER_SNAKE);
+        did_leader_succeed = true;
+    } else if (leader_sequence_one_key(KC_E) || leader_sequence_one_key(KC_I)) {
+        enter_case_mode(CASE_MODE_LOWER_SNAKE);
+        did_leader_succeed = true;
+    } else if (leader_sequence_one_key(KC_W) || leader_sequence_one_key(KC_O)) {
+        enter_case_mode(CASE_MODE_LOWER_KEBAB);
+        did_leader_succeed = true;
+    } else if (leader_sequence_one_key(KC_X) || leader_sequence_one_key(KC_DOT)) {
+        enter_case_mode(CASE_MODE_HTTP_HEADER);
+        did_leader_succeed = true;
+    } else if (leader_sequence_one_key(KC_S) || leader_sequence_one_key(KC_L)) {
+        enter_case_mode(CASE_MODE_UPPER_KEBAB);
+        did_leader_succeed = true;
+    } else if (leader_sequence_one_key(KC_A) || leader_sequence_one_key(KC_SCLN)) {
+        tap_code(KC_CAPS_LOCK);
         did_leader_succeed = true;
     }
-    // Future leader sequences can be added here
-    // Example:
-    // else if (leader_sequence_two_keys(KC_C, KC_S)) {
-    //     // Some other command
-    //     did_leader_succeed = true;
-    // }
-    
+
     if (!did_leader_succeed) {
         // Future: play fail animation/sound
     }
@@ -392,53 +413,67 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           exit_case_mode();
         }
         return false;
-        
+
       case KC_SPACE:
       case LT(1, KC_SPACE):
         if (record->event.pressed) {
-          // Check for double-tap (within 300ms)
           if (space_was_pressed && timer_elapsed(last_space_timer) < 300) {
-            // Double-tap detected: exit case mode and send a real space
+            // Double-tap: exit case mode.
+            // LOWER_CAMEL consumes space without emitting a separator, so no backspace needed.
+            bool has_separator = (active_case_mode != CASE_MODE_LOWER_CAMEL);
             exit_case_mode();
-            // Delete the previous underscore/dash that was typed
-            tap_code(KC_BSPC);
-            // Send a real space
-            register_code16(KC_SPACE);
+            if (has_separator) {
+              tap_code(KC_BSPC);
+            }
+            tap_code16(KC_SPACE);
             return false;
           }
-          
-          // First space press: send the case-specific character
+
           space_was_pressed = true;
           last_space_timer = timer_read();
-          
+
           switch (active_case_mode) {
-            case CASE_MODE_SNAKE:
-              register_code16(KC_UNDERSCORE);
+            case CASE_MODE_LOWER_SNAKE:
+            case CASE_MODE_UPPER_SNAKE:
+              tap_code16(KC_UNDERSCORE);
               break;
-            case CASE_MODE_HTTP:
-              register_code16(KC_MINUS);
-              // Future: implement capitalization logic
+            case CASE_MODE_LOWER_KEBAB:
+            case CASE_MODE_UPPER_KEBAB:
+              tap_code16(KC_MINUS);
               break;
-            default:
+            case CASE_MODE_HTTP_HEADER:
+              tap_code16(KC_MINUS);
+              capitalize_next = true;
               break;
-          }
-        } else {
-          switch (active_case_mode) {
-            case CASE_MODE_SNAKE:
-              unregister_code16(KC_UNDERSCORE);
+            case CASE_MODE_CAPITALIZE:
+              tap_code16(KC_SPACE);
+              capitalize_next = true;
               break;
-            case CASE_MODE_HTTP:
-              unregister_code16(KC_MINUS);
+            case CASE_MODE_LOWER_CAMEL:
+              capitalize_next = true;
               break;
             default:
               break;
           }
         }
         return false;
-      // Reset space tracking if any other key is pressed
+
       default:
         if (record->event.pressed) {
           space_was_pressed = false;
+        }
+        // Capitalize letters for modes that require it
+        if (keycode >= KC_A && keycode <= KC_Z) {
+          bool always_upper = (active_case_mode == CASE_MODE_UPPER_SNAKE ||
+                               active_case_mode == CASE_MODE_UPPER_KEBAB);
+          bool should_capitalize = always_upper || capitalize_next;
+          if (should_capitalize) {
+            if (record->event.pressed) {
+              if (capitalize_next) capitalize_next = false;
+              tap_code16(S(keycode));
+            }
+            return false;
+          }
         }
         break;
     }
