@@ -462,18 +462,28 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         if (record->event.pressed) {
           space_was_pressed = false;
         }
+        // Resolve mod-tap keys to their base keycode so home-row mods don't
+        // bypass case mode logic. Holds are disabled while a case mode is active.
+        uint16_t base_kc = IS_QK_MOD_TAP(keycode)
+            ? QK_MOD_TAP_GET_TAP_KEYCODE(keycode)
+            : keycode;
         // Capitalize letters for modes that require it
-        if (keycode >= KC_A && keycode <= KC_Z) {
+        if (base_kc >= KC_A && base_kc <= KC_Z) {
           bool always_upper = (active_case_mode == CASE_MODE_UPPER_SNAKE ||
                                active_case_mode == CASE_MODE_UPPER_KEBAB);
           bool should_capitalize = always_upper || capitalize_next;
-          if (should_capitalize) {
-            if (record->event.pressed) {
-              if (capitalize_next) capitalize_next = false;
-              tap_code16(S(keycode));
-            }
-            return false;
+          if (record->event.pressed) {
+            if (capitalize_next) capitalize_next = false;
+            tap_code16(should_capitalize ? S(base_kc) : base_kc);
           }
+          return false;
+        }
+        // Non-letter mod-tap keys (e.g. ;): emit the base keycode, no hold
+        if (IS_QK_MOD_TAP(keycode)) {
+          if (record->event.pressed) {
+            tap_code16(base_kc);
+          }
+          return false;
         }
         break;
     }
